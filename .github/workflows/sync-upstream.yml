@@ -1,0 +1,16 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run daily at midnight
+  workflow_dispatch:
+
+jobs:
+  sync_with_upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync upstream changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh repo sync ${{ github.repository }} -b master --source minio/mc
