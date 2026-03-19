@@ -3,16 +3,20 @@ name: Sync Upstream
 on:
   schedule:
     - cron: '0 0 * * *' # Run daily at midnight
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      pat:
+        description: 'Personal Access Token'
+        required: false
 
 jobs:
-  sync:
+  sync_with_upstream:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ github.event.inputs.pat || secrets.PAT_TOKEN || github.token }}
           fetch-depth: 0
 
       - name: Sync upstream changes
@@ -20,7 +24,7 @@ jobs:
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
           target_sync_branch: master
-          target_repo_token: ${{ secrets.PAT_TOKEN }}
+          target_repo_token: ${{ github.event.inputs.pat || secrets.PAT_TOKEN || github.token }}
           upstream_sync_branch: master
           upstream_sync_repo: minio/mc
           test_mode: false
