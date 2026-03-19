@@ -1,0 +1,84 @@
+name: Build and Publish
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build mc for ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Build
+        run: |
+          make build TARGET_GOOS=${{ matrix.os }} TARGET_GOARCH=${{ matrix.arch }}
+          mv mc mc-${{ matrix.os }}-${{ matrix.arch }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mc-${{ matrix.os }}-${{ matrix.arch }}
+          path: mc-${{ matrix.os }}-${{ matrix.arch }}
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare binaries
+        run: |
+          mkdir -p release-binaries
+          find artifacts -type f -name 'mc-*' -exec cp {} release-binaries/ \;
+
+      - name: Create Tag
+        id: create_tag
+        run: |
+          TAG_NAME="build-${GITHUB_SHA::7}"
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+
+      - name: Release Note
+        run: |
+          echo "Automated build for commit ${GITHUB_SHA}" > release_notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          target_commitish: ${{ github.sha }}
+          name: Release ${{ env.TAG_NAME }}
+          body_path: release_notes.md
+          files: release-binaries/mc-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
