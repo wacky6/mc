@@ -1,0 +1,30 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run daily at midnight
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
+
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+        with:
+          target_sync_branch: master
+          target_repo_token: ${{ secrets.PAT_TOKEN }}
+          upstream_sync_branch: master
+          upstream_sync_repo: minio/mc
+          test_mode: false
+
+      - name: Check for Failure
+        if: failure()
+        run: echo "[Error] Due to a change in the workflow builder provided by GitHub, please copy the error message to the issue to request help."
