@@ -13,22 +13,8 @@ jobs:
   sync_with_upstream:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout target repo
-        uses: actions/checkout@v4
-        with:
-          token: ${{ github.event.inputs.pat || secrets.PAT_TOKEN || github.token }}
-          fetch-depth: 0
-
       - name: Sync upstream changes
-        id: sync
-        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
-        with:
-          target_sync_branch: master
-          target_repo_token: ${{ github.event.inputs.pat || secrets.PAT_TOKEN || github.token }}
-          upstream_sync_branch: master
-          upstream_sync_repo: minio/mc
-          test_mode: false
-
-      - name: Check for Failure
-        if: failure()
-        run: echo "[Error] Due to a change in the workflow builder provided by GitHub, please copy the error message to the issue to request help."
+        env:
+          GH_TOKEN: ${{ github.event.inputs.pat || secrets.PAT_TOKEN || github.token }}
+        run: |
+          gh repo sync ${{ github.repository }} -b master --source minio/mc
