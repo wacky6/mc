@@ -4,10 +4,6 @@ on:
   schedule:
     - cron: '0 0 * * *' # Run daily at midnight
   workflow_dispatch:
-    inputs:
-      pat:
-        description: 'Personal Access Token'
-        required: false
 
 jobs:
   sync_with_upstream:
@@ -15,6 +11,6 @@ jobs:
     steps:
       - name: Sync upstream changes
         env:
-          GH_TOKEN: ${{ github.event.inputs.pat || secrets.PAT_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh repo sync ${{ github.repository }} -b master --source minio/mc
